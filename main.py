@@ -4,21 +4,23 @@ from ultralytics import YOLO
 from PIL import Image
 import io
 import base64
-import numpy as np
+import os
 
 app = FastAPI()
 
-# Setup CORS agar bisa diakses Next.js
+# CORS (sementara open)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load Model
-model = YOLO("objectdetection.pt")
+# Load model dengan path aman
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "objectdetection.pt")
+model = YOLO(MODEL_PATH)
 
 @app.get("/")
 def read_root():
@@ -26,15 +28,12 @@ def read_root():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # 1. Baca gambar dari upload
     image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-    # 2. Prediksi dengan YOLO
     results = model(image)
     result = results[0]
 
-    # 3. Ambil Data Teks (JSON)
     detections = []
     for box in result.boxes:
         detections.append({
@@ -43,19 +42,15 @@ async def predict(file: UploadFile = File(...)):
             "box": box.xyxy.tolist()[0]
         })
 
-    # 4. Ambil Gambar Hasil (Plotting)
-    # result.plot() mengembalikan numpy array (BGR)
-    im_array = result.plot() 
-    # Ubah BGR (OpenCV format) ke RGB (PIL format)
-    im_rgb = Image.fromarray(im_array[..., ::-1]) 
-    
-    # 5. Ubah Gambar ke Base64 string agar bisa dikirim lewat JSON
+    im_array = result.plot()
+    im_rgb = Image.fromarray(im_array[..., ::-1])
+
     buffered = io.BytesIO()
-    im_rgb.save(buffered, format="JPEG")
+    im_rgb.save(buffered, format="JPEG", quality=85)
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     return {
-        "filename": file.filename, 
+        "filename": file.filename,
         "detections": detections,
-        "image_base64": img_str # <--- Ini data gambarnya
+        "image_base64": img_str
     }
