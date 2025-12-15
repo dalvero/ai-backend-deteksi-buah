@@ -8,22 +8,22 @@ import os
 
 app = FastAPI()
 
-# CORS (sementara open)
+# CORS (allow FE Vercel)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # bisa dipersempit nanti
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load model dengan path aman
+# Load model (path aman di cloud)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "objectdetection.pt")
 model = YOLO(MODEL_PATH)
 
 @app.get("/")
-def read_root():
+def root():
     return {"message": "API Deteksi Buah Siap!"}
 
 @app.post("/predict")
