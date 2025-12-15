@@ -8,23 +8,23 @@ import os
 
 app = FastAPI()
 
-# CORS (allow FE Vercel)
+# CORS open (HF butuh ini)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # bisa dipersempit nanti
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load model (path aman di cloud)
+# Load model
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "objectdetection.pt")
 model = YOLO(MODEL_PATH)
 
 @app.get("/")
 def root():
-    return {"message": "API Deteksi Buah Siap!"}
+    return {"message": "API Deteksi Buah Siap (HF Spaces)"}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -50,7 +50,6 @@ async def predict(file: UploadFile = File(...)):
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     return {
-        "filename": file.filename,
         "detections": detections,
         "image_base64": img_str
     }
